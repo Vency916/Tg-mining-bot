@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ SMINE Pro Miner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://ton-connect.github.io/tonconnect-sdk/tonconnect-sdk-2.2.1.min.js"></script>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --primary-dark: #00cc6a;
+            --bg: #0a0a0a;
+            --card-bg: #1a1a1a;
+            --text: #e0e0e0;
+            --text-dim: #7a7a7a;
+            --nav-bg: #111;
+        }
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 100%;
+            padding-bottom: 60px; /* Space for bottom nav */
+        }
+        .header {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #252525;
+        }
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+        }
+        .username {
+            font-weight: bold;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .settings-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 12px;
+            border: 1px solid #252525;
+        }
+        .balance {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary);
+            text-align: center;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .subtext {
+            color: var(--text-dim);
+            font-size: 13px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            background: #252525;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            width: 100%;
+            margin: 6px 0;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn:active {
+            background: var(--primary-dark);
+            transform: scale(0.98);
+        }
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        .mining-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .status-light {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff5555;
+            box-shadow: 0 0 10px #ff5555;
+        }
+        .status-light.active {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #252525;
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-dim);
+            font-size: 10px;
+            text-decoration: none;
+            padding: 5px;
+        }
+        .nav-btn.active {
+            color: var(--primary);
+        }
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 3px;
+        }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            padding: 20px;
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-dim);
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 5px;
+            color: var(--text);
+            font-family: inherit;
+        }
+        .upgrade-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #252525;
+        }
+        .upgrade-info {
+            flex: 1;
+        }
+        .upgrade-name {
+            font-weight: bold;
+        }
+        .upgrade-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .upgrade-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .task-item.completed {
+            opacity: 0.7;
+        }
+        .task-btn.completed {
+            background: #555;
+            cursor: default;
+        }
+        .ton-payment {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .ton-amount {
+            font-weight: bold;
+            color: var(--primary);
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+    <style>
+        /* Add these new task styles */
+        .task-item {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .task-item.completed {
+            opacity: 0.7;
+            border-left: 3px solid var(--primary);
+        }
+        .task-btn.completed {
+            background: #555 !important;
+            cursor: not-allowed;
+        }
+        .reward-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: rewardPop 1.5s forwards;
+            display: none;
+        }
+        @keyframes rewardPop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -150%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -200%) scale(0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Profile -->
+        <div class="header">
+            <div class="profile">
+                <img id="profile-pic" class="profile-pic" src="https://via.placeholder.com/40" alt="Profile">
+                <div id="username" class="username">Loading...</div>
+            </div>
+            <button class="settings-btn" id="settings-btn">⚙️</button>
+        </div>
+
+        <!-- Main Mining Dashboard -->
+        <div id="dashboard-view">
+            <!-- Balance Card -->
+            <div class="card">
+                <div class="subtext">Mining Balance</div>
+                <div class="balance" id="balance">0.0000 MINE</div>
+                <div class="subtext" id="payout-status">🟠 Connect wallet for payouts</div>
+                
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Hashrate</div>
+                        <div class="stat-value" id="hashrate">640.4 MH/s</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Unconfirmed</div>
+                        <div class="stat-value" id="unconfirmed">0.0000 MINE</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Blocks Found</div>
+                        <div class="stat-value" id="blocks">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Payout Threshold</div>
+                        <div class="stat-value">0.0356 MINE</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mining Control -->
+            <div class="card">
+                <div class="mining-status">
+                    <div class="status-light" id="status-light"></div>
+                    <span id="status-text">MINER OFFLINE</span>
+                </div>
+                <button class="btn pulse" id="toggle-mine">▶ START MINING</button>
+            </div>
+
+            <!-- Wallet Actions -->
+            <div class="card">
+                <button class="btn" id="connect-wallet">🔗 CONNECT WALLET</button>
+                <button class="btn btn-secondary" id="request-payout" disabled>⏳ PAYOUT (0.0356 MINE)</button>
+            </div>
+        </div>
+
+        <!-- Other Views (hidden by default) -->
+        <div id="upgrade-view" style="display:none">
+            <div class="card">
+                <h3>Upgrade Mining Speed</h3>
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Basic GPU</div>
+                        <div class="upgrade-desc">+100 MH/s - Cost: 10 MINE</div>
+                    </div>
+                    <button class="upgrade-btn" data-upgrade="gpu1">Buy</button>
+                </div>
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Advanced Rig</div>
+                        <div class="upgrade-desc">+500 MH/s - Cost: 45 MINE</div>
+                    </div>
+                    <button class="upgrade-btn" data-upgrade="gpu2">Buy</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="presale-view" style="display:none">
+            <div class="card">
+                <h3>Token Presale</h3>
+                <p>Buy SMINE tokens at discounted rates:</p>
+                
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Starter Pack</div>
+                        <div class="upgrade-desc">100 MINE</div>
+                    </div>
+                    <div class="ton-payment">
+                        <div class="ton-amount">0.5 TON</div>
+                        <button class="btn buy-presale" data-amount="100" data-price="0.5">Buy with TON</button>
+                    </div>
+                </div>
+                
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Investor Pack</div>
+                        <div class="upgrade-desc">500 MINE</div>
+                    </div>
+                    <div class="ton-payment">
+                        <div class="ton-amount">2.0 TON</div>
+                        <button class="btn buy-presale" data-amount="500" data-price="2.0">Buy with TON</button>
+                    </div>
+                </div>
+                
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Whale Pack</div>
+                        <div class="upgrade-desc">2500 MINE</div>
+                    </div>
+                    <div class="ton-payment">
+                        <div class="ton-amount">8.5 TON</div>
+                        <button class="btn buy-presale" data-amount="2500" data-price="8.5">Buy with TON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="leaderboard-view" style="display:none">
+            <div class="card">
+                <h3>Top Miners</h3>
+                <div id="leaderboard-list">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </div>
+
+        <div id="referral-view" style="display:none">
+            <div class="card">
+                <h3>Referral Program</h3>
+                <p>Invite friends and earn 10% of their mining rewards!</p>
+                <div class="stat-item">
+                    <div class="stat-label">Your Referral Link</div>
+                    <div class="stat-value" id="referral-link">Loading...</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Total Referrals</div>
+                    <div class="stat-value" id="referral-count">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Earned From Referrals</div>
+                    <div class="stat-value" id="referral-earnings">0 MINE</div>
+                </div>
+                <button class="btn" id="copy-referral">Copy Referral Link</button>
+            </div>
+        </div>
+
+        <div class="reward-animation" id="reward-animation"></div>
+
+    <!-- Modified Tasks View -->
+    <div id="tasks-view" style="display:none">
+        <div class="card">
+            <h3>Daily Tasks</h3>
+            <div id="tasks-container">
+                <!-- Tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="#" class="nav-btn active" data-view="dashboard">
+            <span class="nav-icon">⛏️</span>
+            <span>Mine</span>
+        </a>
+        <a href="#" class="nav-btn" data-view="upgrade">
+            <span class="nav-icon">🚀</span>
+            <span>Upgrade</span>
+        </a>
+        <a href="#" class="nav-btn" data-view="presale">
+            <span class="nav-icon">💰</span>
+            <span>Presale</span>
+        </a>
+        <a href="#" class="nav-btn" data-view="leaderboard">
+            <span class="nav-icon">🏆</span>
+            <span>Leaderboard</span>
+        </a>
+        <a href="#" class="nav-btn" data-view="referral">
+            <span class="nav-icon">👥</span>
+            <span>Referrals</span>
+        </a>
+        <a href="#" class="nav-btn" data-view="tasks">
+            <span class="nav-icon">✅</span>
+            <span>Tasks</span>
+        </a>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Settings</div>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="username-input">Username</label>
+                <input type="text" id="username-input" placeholder="Enter your username">
+            </div>
+            <button class="btn" id="save-settings">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== Telegram Integration =====
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Get user data
+        const user = tg.initDataUnsafe.user || {};
+        const profilePic = user.photo_url || 'https://via.placeholder.com/40';
+        const username = user.username ? `@${user.username}` : 'User';
+        
+        // Set profile info
+        document.getElementById('profile-pic').src = profilePic;
+        document.getElementById('username').textContent = username;
+        document.getElementById('username-input').value = username;
+
+        // ===== Mining Engine =====
+        const config = {
+            baseHashrate: 640.4,
+            miningRate: 0.0001,
+            payoutThreshold: 0.0356,
+            blockChance: 0.0001,
+            blockReward: 0.5
+        };
+        
+        let state = {
+            isMining: false,
+            balance: 0,
+            unconfirmed: 0,
+            blocksFound: 0,
+            walletConnected: false,
+            hashrate: config.baseHashrate,
+            miningInterval: null,
+            referrals: 0,
+            referralEarnings: 0,
+            referralCode: `SMINE-${user.id || '1234'}`,
+            upgrades: {
+                gpu1: false,
+                gpu2: false
+            }
+        };
+
+        // ===== DOM Elements =====
+        const elements = {
+            balance: document.getElementById('balance'),
+            unconfirmed: document.getElementById('unconfirmed'),
+            blocks: document.getElementById('blocks'),
+            payoutStatus: document.getElementById('payout-status'),
+            toggleMineBtn: document.getElementById('toggle-mine'),
+            statusLight: document.getElementById('status-light'),
+            statusText: document.getElementById('status-text'),
+            connectWalletBtn: document.getElementById('connect-wallet'),
+            requestPayoutBtn: document.getElementById('request-payout'),
+            referralLink: document.getElementById('referral-link'),
+            referralCount: document.getElementById('referral-count'),
+            referralEarnings: document.getElementById('referral-earnings'),
+            leaderboardList: document.getElementById('leaderboard-list'),
+            views: {
+                dashboard: document.getElementById('dashboard-view'),
+                upgrade: document.getElementById('upgrade-view'),
+                presale: document.getElementById('presale-view'),
+                leaderboard: document.getElementById('leaderboard-view'),
+                referral: document.getElementById('referral-view'),
+                tasks: document.getElementById('tasks-view')
+            }
+        };
+
+        // ===== View Management =====
+        function showView(viewName) {
+            // Hide all views
+            Object.values(elements.views).forEach(view => {
+                view.style.display = 'none';
+            });
+            
+            // Show selected view
+            elements.views[viewName].style.display = 'block';
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.view === viewName) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Special view handling
+            if (viewName === 'leaderboard') {
+                updateLeaderboard();
+            }
+        }
+
+        // ===== Core Functions =====
+        function formatCurrency(amount) {
+            return amount.toLocaleString('en-US', {
+                minimumFractionDigits: 4,
+                maximumFractionDigits: 4
+            });
+        }
+
+        function updateUI() {
+            // Update numbers
+            elements.balance.textContent = `${formatCurrency(state.balance)} MINE`;
+            elements.unconfirmed.textContent = `${formatCurrency(state.unconfirmed)} MINE`;
+            elements.blocks.textContent = state.blocksFound;
+            elements.referralCount.textContent = state.referrals;
+            elements.referralEarnings.textContent = `${formatCurrency(state.referralEarnings)} MINE`;
+            elements.referralLink.textContent = `https://t.me/${tg.initDataUnsafe.user?.username || 'your_bot'}?start=${state.referralCode}`;
+            
+            // Update payout button state
+            elements.requestPayoutBtn.disabled = !state.walletConnected || state.unconfirmed < config.payoutThreshold;
+            elements.requestPayoutBtn.textContent = state.walletConnected 
+                ? `💰 PAYOUT (${formatCurrency(config.payoutThreshold)} MINE)`
+                : '⏳ CONNECT WALLET';
+            
+            // Update status messages
+            if (!state.walletConnected) {
+                elements.payoutStatus.textContent = "🔴 Connect wallet for payouts";
+                elements.payoutStatus.style.color = "#ff5555";
+            } else if (state.unconfirmed >= config.payoutThreshold) {
+                elements.payoutStatus.textContent = "🟢 Ready for payout!";
+                elements.payoutStatus.style.color = "#00ff88";
+            } else {
+                elements.payoutStatus.textContent = `🟠 Need ${formatCurrency(config.payoutThreshold - state.unconfirmed)} more`;
+                elements.payoutStatus.style.color = "#ffaa00";
+            }
+            
+            // Update hashrate display
+            document.getElementById('hashrate').textContent = `${state.hashrate} MH/s`;
+        }
+
+        function startMining() {
+            if (state.isMining) return;
+            
+            state.isMining = true;
+            elements.statusLight.classList.add('active');
+            elements.statusText.textContent = "MINING ONLINE";
+            elements.toggleMineBtn.textContent = "⏹ STOP MINING";
+            elements.toggleMineBtn.classList.remove('pulse');
+            
+            state.miningInterval = setInterval(() => {
+                // Calculate mined amount based on current hashrate
+                const minedAmount = config.miningRate * (state.hashrate / config.baseHashrate);
+                state.unconfirmed += minedAmount;
+                
+                // Check for block discovery
+                if (Math.random() < config.blockChance) {
+                    state.blocksFound++;
+                    state.unconfirmed += config.blockReward;
+                    tg.HapticFeedback.impactOccurred('heavy');
+                }
+                
+                updateUI();
+                
+                // Vibrate on every 0.01 MINE mined
+                if (Math.floor(state.unconfirmed * 100) > Math.floor((state.unconfirmed - minedAmount) * 100)) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            }, 1000);
+        }
+
+        function stopMining() {
+            if (!state.isMining) return;
+            
+            state.isMining = false;
+            clearInterval(state.miningInterval);
+            elements.statusLight.classList.remove('active');
+            elements.statusText.textContent = "MINER OFFLINE";
+            elements.toggleMineBtn.textContent = "▶ START MINING";
+            elements.toggleMineBtn.classList.add('pulse');
+            
+            tg.HapticFeedback.notificationOccurred('warning');
+        }
+
+        function updateLeaderboard() {
+            // Simulated leaderboard data
+            const leaderboardData = [
+                { username: "@crypto_pro", mined: 245.67 },
+                { username: "@miner123", mined: 189.23 },
+                { username: "@blockchainer", mined: 156.89 },
+                { username: username, mined: state.balance + state.unconfirmed },
+                { username: "@newbie", mined: 45.12 }
+            ].sort((a, b) => b.mined - a.mined);
+            
+            elements.leaderboardList.innerHTML = leaderboardData.map((user, index) => `
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">${index + 1}. ${user.username}</div>
+                        <div class="upgrade-desc">${formatCurrency(user.mined)} MINE</div>
+                    </div>
+                    ${user.username === username ? '<span style="color:var(--primary)">YOU</span>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // ===== Event Handlers =====
+        // Mining control
+        elements.toggleMineBtn.addEventListener('click', () => {
+            if (state.isMining) {
+                stopMining();
+            } else {
+                startMining();
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+        });
+
+        // Wallet connection
+        elements.connectWalletBtn.addEventListener('click', () => {
+            tg.showPopup({
+                title: "🔗 Connect Wallet",
+                message: "Enter your TON wallet address to receive payouts:",
+                buttons: [
+                    {id: "cancel", type: "cancel"},
+                    {id: "connect", type: "default", text: "CONNECT"}
+                ]
+            }, (btnId) => {
+                if (btnId === "connect") {
+                    state.walletConnected = true;
+                    updateUI();
+                    tg.showAlert("✅ Wallet connected!\n\nYou can now request payouts when you reach 0.0356 MINE.");
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
+        });
+
+        // Payout request
+        elements.requestPayoutBtn.addEventListener('click', () => {
+            if (!state.walletConnected) {
+                tg.showAlert("Please connect your wallet first!");
+                return;
+            }
+            
+            if (state.unconfirmed < config.payoutThreshold) {
+                tg.showAlert(`You need at least ${config.payoutThreshold} MINE to request payout.`);
+                return;
+            }
+            
+            // Prepare payout data for bot
+            const payoutData = {
+                action: "process_payout",
+                userId: user.id,
+                amount: state.unconfirmed,
+                timestamp: Date.now()
+            };
+            
+            // Send to bot
+            tg.sendData(JSON.stringify(payoutData));
+            
+            // Show confirmation (actual balance update will come from bot)
+            tg.showAlert(`🏦 Payout request for ${formatCurrency(state.unconfirmed)} MINE submitted!`);
+            
+            // Temporary UI update (bot should confirm)
+            state.balance += state.unconfirmed;
+            state.unconfirmed = 0;
+            updateUI();
+            
+            tg.HapticFeedback.notificationOccurred('success');
+        });
+
+        // Navigation
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                showView(btn.dataset.view);
+            });
+        });
+
+        // Settings modal
+        const settingsModal = document.getElementById('settings-modal');
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            settingsModal.style.display = 'flex';
+        });
+        
+        document.getElementById('close-modal').addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+        
+        document.getElementById('save-settings').addEventListener('click', () => {
+            const newUsername = document.getElementById('username-input').value;
+            if (newUsername && newUsername !== username) {
+                // In a real app, you would send this to your bot
+                document.getElementById('username').textContent = newUsername;
+                tg.showAlert("Username updated!");
+            }
+            settingsModal.style.display = 'none';
+        });
+
+        // Upgrade purchases
+        document.querySelectorAll('[data-upgrade]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const upgrade = btn.dataset.upgrade;
+                let cost = 0;
+                let hashrateBoost = 0;
+                
+                if (upgrade === 'gpu1') {
+                    cost = 10;
+                    hashrateBoost = 100;
+                } else if (upgrade === 'gpu2') {
+                    cost = 45;
+                    hashrateBoost = 500;
+                }
+                
+                if (state.balance >= cost) {
+                    state.balance -= cost;
+                    state.hashrate += hashrateBoost;
+                    state.upgrades[upgrade] = true;
+                    updateUI();
+                    tg.showAlert(`✅ Upgrade purchased! Your hashrate is now ${state.hashrate} MH/s`);
+                    btn.textContent = "Owned";
+                    btn.disabled = true;
+                } else {
+                    tg.showAlert(`You need ${cost} MINE to purchase this upgrade`);
+                }
+            });
+        });
+
+        // Referral link copy
+        document.getElementById('copy-referral').addEventListener('click', () => {
+            navigator.clipboard.writeText(elements.referralLink.textContent);
+            tg.showAlert("Referral link copied to clipboard!");
+        });
+
+        // ===== Initialize =====
+        updateUI();
+        elements.toggleMineBtn.classList.add('pulse');
+        updateLeaderboard();
+        
+        // Enable back button handling
+        tg.BackButton.onClick(() => {
+            if (state.isMining) {
+                stopMining();
+            }
+            tg.close();
+        });
+    </script>
+    <script>
+        // ===== TON Wallet Integration =====
+        const connector = new TonConnect.TonConnect({
+            manifestUrl: 'https://dynamic-tartufo-4e0b28.netlify.app/tonconnect-manifest.json'
+        });
+        
+        // Replace with your actual admin wallet address
+        const ADMIN_WALLET = 'UQBFsHWKsO1yWZK5Drsg4eSbCwkPidIRL_nSiUXtvGzuAG3R'; 
+        
+        // Initialize wallet connection
+        async function initWallet() {
+            try {
+                await connector.restoreConnection();
+                connector.onStatusChange((wallet) => {
+                    console.log('Wallet status:', wallet);
+                });
+            } catch (error) {
+                console.error('Wallet init error:', error);
+            }
+        }
+        
+        // Presale purchase function
+        async function buyWithTON(amount, price) {
+            try {
+                if (!connector.connected) {
+                    const wallets = await connector.getWallets();
+                    const wallet = await connector.connect(wallets[0]);
+                    if (!wallet) {
+                        tg.showAlert("Please connect your TON wallet first");
+                        return;
+                    }
+                }
+                
+                const transaction = {
+                    validUntil: Math.floor(Date.now() / 1000) + 300,
+                    messages: [{
+                        address: ADMIN_WALLET,
+                        amount: (price * 1000000000).toString(),
+                        payload: JSON.stringify({
+                            type: 'presale',
+                            userId: tg.initDataUnsafe.user?.id,
+                            amount: amount,
+                            timestamp: Date.now()
+                        })
+                    }]
+                };
+                
+                const result = await connector.sendTransaction(transaction);
+                
+                if (result) {
+                    tg.sendData(JSON.stringify({
+                        action: 'presale_purchase',
+                        userId: tg.initDataUnsafe.user?.id,
+                        amount: amount,
+                        txHash: result.boc,
+                        price: price
+                    }));
+                    
+                    tg.showAlert(`✅ ${amount} MINE purchased! Processing...`);
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                tg.showAlert(`❌ Payment failed: ${error.message || 'Unknown error'}`);
+            }
+        }
+        
+        // Initialize when DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initWallet();
+            
+            // Presale button handlers
+            document.querySelectorAll('.buy-presale').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const amount = parseFloat(this.dataset.amount);
+        const price = parseFloat(this.dataset.price);
+        
+        tg.showConfirm(`Purchase ${amount} MINE for ${price} TON?`, async (confirmed) => {
+            if (confirmed) {
+                tg.showPopup({
+                    title: "Confirm Purchase",
+                    message: `You are about to buy ${amount} MINE tokens for ${price} TON`,
+                    buttons: [
+                        {id: "cancel", type: "cancel"},
+                        {id: "confirm", type: "default", text: "CONFIRM"}
+                    ]
+                }, async (btnId) => {
+                    if (btnId === "confirm") {
+                        tg.MainButton.showProgress();
+                        try {
+                            await buyWithTON(amount, price);
+                        } finally {
+                            tg.MainButton.hideProgress();
+                        }
+                    }
+                });
+            }
+        });
+    });
+});
+            
+            // Handle responses from bot
+            tg.onEvent('webAppDataReceived', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.action === 'presale_processed') {
+                    tg.showAlert(`🎉 ${data.amount} MINE successfully added to your balance!`);
+                    // Update UI if needed
+                }
+            });
+        });
+    </script>
+    <script>
+        // ===== Telegram Integration =====
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Get user data
+        const user = tg.initDataUnsafe.user || {};
+        const profilePic = user.photo_url || 'https://via.placeholder.com/40';
+        const username = user.username ? `@${user.username}` : 'User';
+        
+        // Set profile info
+        document.getElementById('profile-pic').src = profilePic;
+        document.getElementById('username').textContent = username;
+        document.getElementById('username-input').value = username;
+
+        // ===== Mining Engine =====
+        const config = {
+            baseHashrate: 640.4,
+            miningRate: 0.0001,
+            payoutThreshold: 0.0356,
+            blockChance: 0.0001,
+            blockReward: 0.5,
+            taskRewards: {
+                joinChannel: 5,
+                followTwitter: 10,
+                inviteFriends: 25
+            }
+        };
+        
+        let state = {
+            isMining: false,
+            balance: 0,
+            unconfirmed: 0,
+            blocksFound: 0,
+            walletConnected: false,
+            hashrate: config.baseHashrate,
+            miningInterval: null,
+            referrals: 0,
+            referralEarnings: 0,
+            referralCode: `SMINE-${user.id || '1234'}`,
+            upgrades: {
+                gpu1: false,
+                gpu2: false
+            },
+            completedTasks: {
+                joinChannel: false,
+                followTwitter: false,
+                inviteFriends: false
+            },
+            lastTaskReset: Date.now()
+        };
+
+        // ===== Task Management =====
+        function checkDailyReset() {
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            
+            if (now - state.lastTaskReset >= oneDay) {
+                // Reset all tasks
+                state.completedTasks = {
+                    joinChannel: false,
+                    followTwitter: false,
+                    inviteFriends: false
+                };
+                state.lastTaskReset = now;
+                updateTaskUI();
+            }
+        }
+
+        function updateTaskUI() {
+            const tasks = [
+                { id: 'joinChannel', element: 'task-join' },
+                { id: 'followTwitter', element: 'task-follow' },
+                { id: 'inviteFriends', element: 'task-invite' }
+            ];
+            
+            tasks.forEach(task => {
+                const element = document.getElementById(task.element);
+                const button = element.querySelector('.task-btn');
+                
+                if (state.completedTasks[task.id]) {
+                    element.classList.add('completed');
+                    button.textContent = '✅ Claimed';
+                    button.classList.add('completed');
+                    button.disabled = true;
+                } else {
+                    element.classList.remove('completed');
+                    button.textContent = 'Claim';
+                    button.classList.remove('completed');
+                    button.disabled = false;
+                }
+            });
+        }
+
+        function showRewardAnimation(amount) {
+            const anim = document.getElementById('reward-animation');
+            anim.textContent = `+${amount} MINE!`;
+            anim.style.display = 'block';
+            
+            setTimeout(() => {
+                anim.style.display = 'none';
+            }, 1500);
+        }
+
+        async function claimTask(taskId) {
+            if (state.completedTasks[taskId]) {
+                tg.showAlert("You've already claimed this task today!");
+                return;
+            }
+            
+            // In a real app, you would verify task completion here
+            // For now, we'll just simulate successful verification
+            const verification = await verifyTaskCompletion(taskId);
+            
+            if (verification.success) {
+                state.completedTasks[taskId] = true;
+                const reward = config.taskRewards[taskId];
+                state.balance += reward;
+                
+                updateUI();
+                updateTaskUI();
+                showRewardAnimation(reward);
+                tg.HapticFeedback.notificationOccurred('success');
+                
+                // Send claim to backend
+                tg.sendData(JSON.stringify({
+                    action: 'claim_task',
+                    taskId: taskId,
+                    userId: user.id,
+                    reward: reward
+                }));
+            } else {
+                tg.showAlert(verification.message || "Task verification failed");
+            }
+        }
+
+        async function verifyTaskCompletion(taskId) {
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // In a real app, you would:
+            // 1. For joinChannel: Check if user is in your Telegram channel
+            // 2. For followTwitter: Check Twitter API for follow status
+            // 3. For inviteFriends: Check referral count in your database
+            
+            return { success: true };
+        }
+
+        // ===== Initialize Tasks =====
+        function initTasks() {
+            checkDailyReset();
+            updateTaskUI();
+            
+            // Add task button handlers
+            document.querySelectorAll('.task-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const taskId = btn.dataset.task;
+                    claimTask(taskId);
+                });
+            });
+        }
+
+        // ===== Modified Initialization =====
+        function init() {
+            updateUI();
+            elements.toggleMineBtn.classList.add('pulse');
+            updateLeaderboard();
+            initTasks(); // Initialize task system
+            
+            // Check for task reset every hour
+            setInterval(checkDailyReset, 60 * 60 * 1000);
+        }
+
+        // Call init() when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Rest of your existing JavaScript remains the same...
+    </script>
+    <div class="reward-animation" id="reward-animation"></div>
+
+    <script>
+        // ===== Consolidated Configuration =====
+        const config = {
+            baseHashrate: 640.4,
+            miningRate: 0.0001,
+            payoutThreshold: 0.0356,
+            blockChance: 0.0001,
+            blockReward: 0.5,
+            taskRewards: {
+                joinChannel: 5,
+                followTwitter: 10,
+                inviteFriends: 25
+            },
+            upgrades: {
+                gpu1: { cost: 10, boost: 100 },
+                gpu2: { cost: 45, boost: 500 }
+            }
+        };
+    
+        // ===== Improved State Management =====
+        let state = {
+            isMining: false,
+            balance: 0,
+            unconfirmed: 0,
+            blocksFound: 0,
+            walletConnected: false,
+            hashrate: config.baseHashrate,
+            miningInterval: null,
+            referrals: 0,
+            referralEarnings: 0,
+            referralCode: `SMINE-${tg.initDataUnsafe.user?.id || '1234'}`,
+            upgrades: {
+                gpu1: false,
+                gpu2: false
+            },
+            completedTasks: {
+                joinChannel: false,
+                followTwitter: false,
+                inviteFriends: false
+            },
+            lastTaskReset: Date.now()
+        };
+    
+        // ===== Enhanced Task System =====
+        function initTasks() {
+            checkDailyReset();
+            updateTaskUI();
+            
+            document.querySelectorAll('.task-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const taskId = btn.dataset.task;
+                    if (!state.completedTasks[taskId]) {
+                        claimTask(taskId);
+                    }
+                });
+            });
+        }
+    
+        async function claimTask(taskId) {
+            try {
+                tg.MainButton.showProgress();
+                
+                // Verify task completion
+                const verification = await verifyTaskCompletion(taskId);
+                if (!verification.success) {
+                    tg.showAlert(verification.message);
+                    return;
+                }
+    
+                // Award tokens
+                const reward = config.taskRewards[taskId];
+                state.balance += reward;
+                state.completedTasks[taskId] = true;
+                
+                // Update UI
+                updateUI();
+                updateTaskUI();
+                showRewardAnimation(reward);
+                tg.HapticFeedback.notificationOccurred('success');
+                
+                // Notify backend
+                tg.sendData(JSON.stringify({
+                    action: 'claim_task',
+                    taskId: taskId,
+                    userId: tg.initDataUnsafe.user?.id,
+                    reward: reward
+                }));
+            } catch (error) {
+                console.error("Task claim error:", error);
+                tg.showAlert("Failed to claim task");
+            } finally {
+                tg.MainButton.hideProgress();
+            }
+        }
+    
+        // ===== Optimized Upgrade System =====
+        function initUpgrades() {
+            document.querySelectorAll('[data-upgrade]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const upgrade = btn.dataset.upgrade;
+                    const { cost, boost } = config.upgrades[upgrade];
+                    
+                    if (state.balance >= cost) {
+                        state.balance -= cost;
+                        state.hashrate += boost;
+                        state.upgrades[upgrade] = true;
+                        updateUI();
+                        
+                        btn.textContent = "Owned";
+                        btn.disabled = true;
+                        tg.showAlert(`✅ Upgrade purchased! New hashrate: ${state.hashrate} MH/s`);
+                    } else {
+                        tg.showAlert(`You need ${cost} MINE for this upgrade`);
+                    }
+                });
+            });
+        }
+    
+        // ===== Initialization =====
+        function init() {
+            updateUI();
+            initTasks();
+            initUpgrades();
+            initWallet();
+            
+            // Start mining button pulse
+            if (!state.isMining) {
+                elements.toggleMineBtn.classList.add('pulse');
+            }
+            
+            // Check for daily reset every hour
+            setInterval(checkDailyReset, 60 * 60 * 1000);
+        }
+    
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+    <script>
+        // ===== Enhanced Task System =====
+        async function loadTasks() {
+            try {
+                // In a real app, you would fetch tasks from your backend
+                const response = await fetch('/get-tasks');
+                const tasks = await response.json();
+                
+                const container = document.getElementById('tasks-container');
+                container.innerHTML = '';
+                
+                tasks.forEach(task => {
+                    const completed = state.completedTasks[task.id] || false;
+                    container.innerHTML += `
+                        <div class="upgrade-item task-item ${completed ? 'completed' : ''}" 
+                             id="task-${task.id}">
+                            <div class="upgrade-info">
+                                <div class="upgrade-name">${task.name}</div>
+                                <div class="upgrade-desc">${task.desc} (Reward: ${task.reward} MINE)</div>
+                            </div>
+                            <button class="upgrade-btn task-btn ${completed ? 'completed' : ''}" 
+                                    data-task="${task.id}"
+                                    ${completed ? 'disabled' : ''}>
+                                ${completed ? '✅ Claimed' : 'Claim'}
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                // Attach event listeners
+                document.querySelectorAll('.task-btn:not(.completed)').forEach(btn => {
+                    btn.addEventListener('click', () => claimTask(btn.dataset.task));
+                });
+            } catch (error) {
+                console.error("Failed to load tasks:", error);
+            }
+        }
+    
+        async function claimTask(taskId) {
+            try {
+                tg.MainButton.showProgress();
+                
+                // Verify task requirements
+                const verification = await verifyTaskRequirements(taskId);
+                if (!verification.success) {
+                    tg.showAlert(verification.message);
+                    return;
+                }
+    
+                // Send claim request to backend
+                const response = await fetch('/claim-task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: tg.initDataUnsafe.user?.id,
+                        taskId: taskId
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    // Update local state
+                    state.completedTasks[taskId] = true;
+                    state.balance += result.reward;
+                    
+                    // Update UI
+                    updateUI();
+                    loadTasks(); // Refresh task list
+                    showRewardAnimation(result.reward);
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    tg.showAlert(result.message || "Failed to claim task");
+                }
+            } catch (error) {
+                console.error("Task claim error:", error);
+                tg.showAlert("An error occurred");
+            } finally {
+                tg.MainButton.hideProgress();
+            }
+        }
+    
+        // ===== Admin Features =====
+        function initAdminFeatures() {
+            if (isAdmin()) {
+                // Add admin button to UI
+                const adminBtn = document.createElement('button');
+                adminBtn.className = 'btn';
+                adminBtn.textContent = '👑 Admin';
+                adminBtn.style.marginTop = '10px';
+                adminBtn.addEventListener('click', () => {
+                    tg.showPopup({
+                        title: "Admin Panel",
+                        message: "Choose action:",
+                        buttons: [
+                            {id: "add_task", type: "default", text: "Add Task"},
+                            {id: "approve_mines", type: "default", text: "Approve Mines"},
+                            {type: "cancel"}
+                        ]
+                    }, (btnId) => {
+                        if (btnId === "add_task") {
+                            tg.showPopup({
+                                title: "Add New Task",
+                                message: "Enter task details:",
+                                buttons: [{type: "cancel"}]
+                            }, () => {
+                                // Handle task creation
+                            });
+                        }
+                    });
+                });
+                
+                document.querySelector('.header').appendChild(adminBtn);
+            }
+        }
+    
+        function isAdmin() {
+            // Check if current user is admin
+            const adminIds = [64847664]; // Replace with your admin IDs
+            return adminIds.includes(tg.initDataUnsafe.user?.id);
+        }
+    
+        // Initialize everything when DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... existing initialization code ...
+            loadTasks();
+            if (isAdmin()) initAdminFeatures();
+        });
+    </script>
+    
+</body>
+</html>
